@@ -1,221 +1,301 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <title>CV Harvard</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        color: #111;
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 10.5pt;
-        line-height: 1.5;
-      }
-      .page {
-        margin: 0;
-        padding: 0;
-      }
-      .header {
-        margin-bottom: 12pt;
-        padding-bottom: 8pt;
-        border-bottom: 1.5pt solid #111;
-      }
-      .header-contact {
-        float: right;
-        text-align: right;
-        font-size: 9pt;
-        color: #444;
-        line-height: 1.6;
-      }
-      .header-name {
-        overflow: hidden;
-      }
-      h1 {
-        margin: 0 0 2pt 0;
-        font-size: 20pt;
+<head>
+<meta charset="UTF-8">
+<title>{{ full_name }} - CV</title>
+<style>
+    @page {
+        size: Letter;
+        margin: 1in;
+    }
+
+    @font-face {
+        font-family: 'EB Garamond';
+        src: url('{{ font_base_url }}/EBGaramond-Regular.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'EB Garamond';
+        src: url('{{ font_base_url }}/EBGaramond-Bold.ttf') format('truetype');
         font-weight: bold;
-        letter-spacing: 0.01em;
-      }
-      .headline {
-        margin: 2pt 0 0;
-        font-size: 10pt;
-        color: #555;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'EB Garamond';
+        src: url('{{ font_base_url }}/EBGaramond-Italic.ttf') format('truetype');
+        font-weight: normal;
         font-style: italic;
-      }
-      .clearfix {
-        clear: both;
-        height: 0;
-        line-height: 0;
-      }
-      section {
-        margin-top: 11pt;
-      }
-      h2 {
-        margin: 0 0 5pt 0;
-        font-size: 9pt;
+    }
+    @font-face {
+        font-family: 'EB Garamond';
+        src: url('{{ font_base_url }}/EBGaramond-BoldItalic.ttf') format('truetype');
         font-weight: bold;
+        font-style: italic;
+    }
+
+    @font-face {
+        font-family: 'Noto Serif';
+        src: url('{{ font_base_url }}/NotoSerif-Regular.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Noto Serif';
+        src: url('{{ font_base_url }}/NotoSerif-Bold.ttf') format('truetype');
+        font-weight: bold;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Noto Serif';
+        src: url('{{ font_base_url }}/NotoSerif-Italic.ttf') format('truetype');
+        font-weight: normal;
+        font-style: italic;
+    }
+    @font-face {
+        font-family: 'Noto Serif';
+        src: url('{{ font_base_url }}/NotoSerif-BoldItalic.ttf') format('truetype');
+        font-weight: bold;
+        font-style: italic;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-size: 11pt;
+        line-height: 1.35;
+        color: #1a1a1a;
+        margin: 0;
+        padding: 0;
+    }
+
+    @media screen {
+        body {
+            padding: 96px;
+        }
+    }
+
+    body.font-serif    { font-family: 'Liberation Serif', 'Times New Roman', serif; }
+    body.font-garamond { font-family: 'EB Garamond', Garamond, serif; }
+    body.font-noto     { font-family: 'Noto Serif', serif; }
+    body.font-carlito  { font-family: 'Carlito', Calibri, sans-serif; }
+
+    .header {
+        text-align: center;
+        margin-bottom: 14pt;
+    }
+
+    .header .name {
+        font-size: 16pt;
+        font-weight: 700;
+        letter-spacing: 1px;
         text-transform: uppercase;
-        letter-spacing: 0.13em;
-        border-bottom: 0.75pt solid #888;
-        padding-bottom: 2pt;
-      }
-      .entry {
-        margin-top: 7pt;
-      }
-      .entry-dates {
-        float: right;
+        margin: 0 0 4pt 0;
+    }
+
+    .header .contact-line {
         font-size: 9.5pt;
-        color: #444;
-        white-space: nowrap;
-      }
-      .entry-title {
-        font-weight: bold;
-        font-size: 10.5pt;
-        margin: 0;
-      }
-      .entry-sub {
-        font-size: 10pt;
         color: #333;
-        margin: 1pt 0 0;
-      }
-      .entry-location {
-        font-size: 9.5pt;
-        color: #666;
+        margin: 0;
+    }
+
+    .header .contact-line span::after {
+        content: " | ";
+        color: #999;
+    }
+
+    .header .contact-line span:last-child::after {
+        content: "";
+    }
+
+    .section {
+        margin-bottom: 12pt;
+        page-break-inside: avoid;
+    }
+
+    .section-title {
+        font-size: 10.5pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #1a1a1a;
+        padding-bottom: 2pt;
+        margin: 0 0 6pt 0;
+    }
+
+    .entry {
+        margin-bottom: 8pt;
+        page-break-inside: avoid;
+    }
+
+    .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+
+    .entry-org {
+        font-weight: 700;
+        font-size: 11pt;
+    }
+
+    .entry-dates {
+        font-size: 10pt;
         font-style: italic;
-      }
-      ul {
-        margin: 4pt 0 0 15pt;
-        padding: 0;
-      }
-      li {
-        margin-top: 2pt;
+        white-space: nowrap;
+        margin-left: 12pt;
+    }
+
+    .entry-role-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 2pt;
+    }
+
+    .entry-role {
+        font-style: italic;
+        font-size: 10.5pt;
+    }
+
+    .entry-location {
         font-size: 10pt;
-      }
-      .skills-list {
+        color: #444;
+    }
+
+    .entry ul {
+        margin: 3pt 0 0 0;
+        padding-left: 16pt;
+    }
+
+    .entry li {
+        margin-bottom: 2pt;
+        text-align: justify;
+    }
+
+    .inline-list p {
         margin: 0;
-        font-size: 10pt;
-      }
-      p {
-        margin: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="page">
+        text-align: justify;
+    }
 
-      <div class="header">
-        {% if source_cv %}
-        <div class="header-contact">
-          {% set parts = [] %}
-          {% if source_cv.basics.email %}{% set _ = parts.append(source_cv.basics.email) %}{% endif %}
-          {% if source_cv.basics.phone %}{% set _ = parts.append(source_cv.basics.phone) %}{% endif %}
-          {{ parts | join(' &nbsp;·&nbsp; ') }}
-          {% if source_cv.basics.location %}<br>{{ source_cv.basics.location }}{% endif %}
-          {% if source_cv.basics.linkedin %}<br>{{ source_cv.basics.linkedin }}{% endif %}
-          {% if source_cv.basics.website %}<br>{{ source_cv.basics.website }}{% endif %}
-        </div>
-        {% endif %}
-        <div class="header-name">
-          <h1>{{ source_cv.basics.full_name if source_cv else 'Candidato' }}</h1>
-          {% if source_cv and source_cv.basics.headline %}
-          <p class="headline">{{ source_cv.basics.headline }}</p>
-          {% endif %}
-        </div>
-        <div class="clearfix"></div>
-      </div>
+    .inline-list .category-label {
+        font-weight: 700;
+    }
 
-      {% if adapted_cv.adapted_summary %}
-      <section>
-        <h2>Resumen Profesional</h2>
-        <p>{{ adapted_cv.adapted_summary }}</p>
-      </section>
-      {% endif %}
+</style>
+</head>
+<body class="font-{{ font_key }}">
 
-      <section>
-        <h2>Experiencia</h2>
-        {% for item in adapted_cv.adapted_experience %}
-        {% set key = item.company.strip().lower() ~ '||' ~ item.title.strip().lower() %}
-        {% set src = experience_map.get(key) %}
-        <div class="entry">
-          {% if src and (src.start_date or src.end_date) %}
-          <span class="entry-dates">
-            {{ src.start_date or '' }}{% if src.start_date and src.end_date %} – {% endif %}{{ src.end_date or '' }}{% if src.start_date and not src.end_date %} – Presente{% endif %}
-          </span>
-          {% endif %}
-          <p class="entry-title">{{ item.title or 'Rol' }}</p>
-          <p class="entry-sub">
-            {{ item.company }}{% if src and src.location %} &nbsp;·&nbsp; <span class="entry-location">{{ src.location }}</span>{% endif %}
-          </p>
-          <div class="clearfix"></div>
-          {% if item.rewritten_bullets %}
-          <ul>
-            {% for bullet in item.rewritten_bullets %}
-            <li>{{ bullet }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </section>
-
-      {% if education %}
-      <section>
-        <h2>Educación</h2>
-        {% for item in education %}
-        <div class="entry">
-          {% if item.start_date or item.end_date %}
-          <span class="entry-dates">
-            {{ item.start_date or '' }}{% if item.start_date and item.end_date %} – {% endif %}{{ item.end_date or '' }}
-          </span>
-          {% endif %}
-          <p class="entry-title">{{ item.degree or 'Título' }}</p>
-          <p class="entry-sub">{{ item.institution or '' }}</p>
-          {% if item.field_of_study %}
-          <p class="entry-sub" style="font-style:italic; color:#555">{{ item.field_of_study }}</p>
-          {% endif %}
-          <div class="clearfix"></div>
-        </div>
-        {% endfor %}
-      </section>
-      {% endif %}
-
-      {% if skills %}
-      <section>
-        <h2>Habilidades</h2>
-        <p class="skills-list">{{ skills | join(' &nbsp;·&nbsp; ') }}</p>
-      </section>
-      {% endif %}
-
-      {% if source_cv and source_cv.certifications %}
-      <section>
-        <h2>Certificaciones</h2>
-        {% for cert in source_cv.certifications %}
-        <div class="entry">
-          {% if cert.date %}
-          <span class="entry-dates">{{ cert.date }}</span>
-          {% endif %}
-          <p class="entry-title">{{ cert.name }}</p>
-          {% if cert.issuer %}
-          <p class="entry-sub">{{ cert.issuer }}</p>
-          {% endif %}
-          <div class="clearfix"></div>
-        </div>
-        {% endfor %}
-      </section>
-      {% endif %}
-
-      {% if source_cv and source_cv.languages %}
-      <section>
-        <h2>Idiomas</h2>
-        <p class="skills-list">
-          {% for lang in source_cv.languages %}
-          {{ lang.name }}{% if lang.level %} ({{ lang.level }}){% endif %}{% if not loop.last %} &nbsp;·&nbsp; {% endif %}
-          {% endfor %}
+    <div class="header">
+        <p class="name">{{ full_name }}</p>
+        <p class="contact-line">
+            {% if location %}<span>{{ location }}</span>{% endif %}
+            {% if phone %}<span>{{ phone }}</span>{% endif %}
+            {% if email %}<span>{{ email }}</span>{% endif %}
+            {% if linkedin %}<span>{{ linkedin }}</span>{% endif %}
         </p>
-      </section>
-      {% endif %}
-
     </div>
-  </body>
+
+    {% if summary %}
+    <div class="section">
+        <p class="section-title">Perfil Profesional</p>
+        <p style="margin:0; text-align: justify;">{{ summary }}</p>
+    </div>
+    {% endif %}
+
+    {% if education %}
+    <div class="section">
+        <p class="section-title">Educación</p>
+        {% for edu in education %}
+        <div class="entry">
+            <div class="entry-header">
+                <span class="entry-org">{{ edu.institution }}</span>
+                <span class="entry-dates">{{ edu.dates }}</span>
+            </div>
+            <div class="entry-role-line">
+                <span class="entry-role">{{ edu.degree }}</span>
+            </div>
+            {% if edu.details %}
+            <ul>
+                {% for d in edu.details %}
+                <li>{{ d }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if experience %}
+    <div class="section">
+        <p class="section-title">Experiencia Profesional</p>
+        {% for job in experience %}
+        <div class="entry">
+            <div class="entry-header">
+                <span class="entry-org">{{ job.company }}</span>
+                <span class="entry-dates">{{ job.dates }}</span>
+            </div>
+            <div class="entry-role-line">
+                <span class="entry-role">{{ job.title }}</span>
+                {% if job.location %}<span class="entry-location">{{ job.location }}</span>{% endif %}
+            </div>
+            {% if job.bullets %}
+            <ul>
+                {% for b in job.bullets %}
+                <li>{{ b }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if projects %}
+    <div class="section">
+        <p class="section-title">Proyectos</p>
+        {% for proj in projects %}
+        <div class="entry">
+            <div class="entry-header">
+                <span class="entry-org">{{ proj.name }}</span>
+                {% if proj.dates %}<span class="entry-dates">{{ proj.dates }}</span>{% endif %}
+            </div>
+            {% if proj.bullets %}
+            <ul>
+                {% for b in proj.bullets %}
+                <li>{{ b }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if skills %}
+    <div class="section">
+        <p class="section-title">Habilidades</p>
+        <div class="inline-list">
+            {% for category, items in skills.items() %}
+            <p><span class="category-label">{{ category }}:</span> {{ items | join(', ') }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if additional %}
+    <div class="section">
+        <p class="section-title">Información Adicional</p>
+        <div class="inline-list">
+            {% for category, items in additional.items() %}
+            <p><span class="category-label">{{ category }}:</span> {{ items | join(', ') }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</body>
 </html>

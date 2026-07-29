@@ -56,5 +56,6 @@ def test_build_markdown_returns_expected_sections() -> None:
     markdown = service.build_markdown(adapted)
 
     assert "# Jane Doe" in markdown
-    assert "## Experience" in markdown
-    assert "## Targeted Keywords" in markdown
+    assert "## Experiencia" in markdown
+    assert "## Resumen Profesional" in markdown
+    assert "## Habilidades" in markdown

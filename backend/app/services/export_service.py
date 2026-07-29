@@ -10,18 +10,28 @@ from xhtml2pdf import pisa
 
 from app.models.export_schema import AdaptedCV
 from app.services.template_service import TemplateService
+from app.utils import cv_renderer
+from app.utils.fonts import DEFAULT_FONT, resolve_font
 
 
 class ExportService:
     def __init__(self) -> None:
         self.template_service = TemplateService()
 
-    def build_harvard_pdf(self, adapted_cv: AdaptedCV) -> bytes:
+    def build_harvard_pdf(self, adapted_cv: AdaptedCV, font_key: str = DEFAULT_FONT) -> bytes:
+        try:
+            return cv_renderer.render_cv_to_pdf(adapted_cv, font_key=font_key)
+        except RuntimeError:
+            pass
+
         html = self.template_service.render_harvard_html(adapted_cv)
         html_pdf = self._build_pdf_from_html(html)
         if html_pdf is not None:
             return html_pdf
         return self._build_reportlab_fallback(adapted_cv)
+
+    def build_preview_html(self, adapted_cv: AdaptedCV, font_key: str = DEFAULT_FONT) -> str:
+        return cv_renderer.render_cv_to_html(adapted_cv, font_key=font_key)
 
     def build_harvard_docx(self, adapted_cv: AdaptedCV) -> bytes:
         document = Document()

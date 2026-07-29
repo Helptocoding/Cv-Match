@@ -1,0 +1,56 @@
+{
+  "full_name": "María José Rodríguez",
+  "location": "Monterrey, NL",
+  "phone": "+52 81 1234 5678",
+  "email": "mj.rodriguez@email.com",
+  "linkedin": "linkedin.com/in/mjrodriguez",
+
+  "summary": "Ingeniera de software con 4 años de experiencia en desarrollo backend y arquitectura de microservicios. Enfoque en sistemas escalables de alto tráfico y liderazgo de equipos técnicos pequeños.",
+
+  "education": [
+    {
+      "institution": "Tecnológico de Monterrey",
+      "degree": "Ingeniería en Sistemas Computacionales",
+      "dates": "2016 – 2020",
+      "location": "Monterrey, México",
+      "details": [
+        "Promedio 92/100. Beca de excelencia académica."
+      ]
+    }
+  ],
+
+  "experience": [
+    {
+      "company": "Nexus Software",
+      "title": "Ingeniera de Software Senior",
+      "dates": "Ene 2023 – Presente",
+      "location": "Remoto",
+      "bullets": [
+        "Lideré la migración de un monolito a arquitectura de microservicios, reduciendo el tiempo de despliegue en 60%.",
+        "Diseñé e implementé APIs REST consumidas por más de 200,000 usuarios activos mensuales.",
+        "Mentoreé a 3 desarrolladores junior, estableciendo estándares de code review y testing."
+      ]
+    },
+    {
+      "company": "DataFlux",
+      "title": "Ingeniera de Software",
+      "dates": "Jul 2020 – Dic 2022",
+      "location": "Monterrey, México",
+      "bullets": [
+        "Desarrollé pipelines de procesamiento de datos con Python y Apache Airflow, procesando 2M+ registros diarios.",
+        "Reduje el tiempo de respuesta de la API principal en 40% mediante optimización de queries y caching."
+      ]
+    }
+  ],
+
+  "skills": {
+    "Lenguajes": ["Python", "TypeScript", "SQL", "Go"],
+    "Frameworks": ["FastAPI", "Django", "React", "Next.js"],
+    "Infraestructura": ["Docker", "Kubernetes", "AWS", "PostgreSQL"]
+  },
+
+  "additional": {
+    "Idiomas": ["Español (nativo)", "Inglés (avanzado C1)"],
+    "Certificaciones": ["AWS Certified Solutions Architect – Associate"]
+  }
+}

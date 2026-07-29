@@ -33,12 +33,36 @@ export type MatchScoreResult = {
   gaps: CompatibilityGap[];
   transferable_skills: TransferableSkill[];
   recommendations: string[];
-  strategy: string;
+  strategy: "llm" | "heuristic" | "failed";
 };
 
 export type LatentSkill = {
   skill: string;
   evidence: string;
+};
+
+export type SkillCoverageItem = {
+  skill: string;
+  status: "explicit_match" | "latent_match" | "missing";
+  evidence: string;
+  suggested_phrase: string;
+};
+
+export type LatentProposal = {
+  skill: string;
+  evidence: string;
+  suggested_phrase: string;
+  experience_context: string;
+};
+
+/** Deterministic before/after of the adaptation. Computed without an LLM, so
+ *  unlike the score delta it is reproducible for the same CV + vacancy. */
+export type AdaptationImpact = {
+  skills_newly_covered: string[];
+  skills_already_covered: string[];
+  skills_still_missing: string[];
+  bullets_total: number;
+  bullets_rewritten: number;
 };
 
 export type AdaptedCV = {
@@ -47,6 +71,7 @@ export type AdaptedCV = {
     company: string;
     title: string;
     rewritten_bullets: string[];
+    bullet_was_rewritten: boolean[];
     keywords_emphasized: string[];
   }>;
   added_keywords: string[];
@@ -55,6 +80,9 @@ export type AdaptedCV = {
   warnings: string[];
   source_cv?: StructuredCV | null;
   meta: ProcessingMetadata;
+  skill_coverage?: SkillCoverageItem[];
+  latent_proposals?: LatentProposal[];
+  impact?: AdaptationImpact | null;
 };
 
 export type MatchFlowState = {

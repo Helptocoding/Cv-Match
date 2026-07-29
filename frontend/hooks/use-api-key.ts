@@ -1,15 +1,32 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+
 import { DEFAULT_CONFIG } from "@/lib/constants";
+import { loadProviderConfig, saveProviderConfig } from "@/lib/storage";
 import type { ProviderConfig } from "@/types/api";
 
 
 export function useApiKey() {
-  const config: ProviderConfig = DEFAULT_CONFIG;
+  const [config, setConfig] = useState<ProviderConfig>(DEFAULT_CONFIG);
+  const [hydrated, setHydrated] = useState(false);
 
-  function updateConfig(_next: ProviderConfig) {
-    // Fixed config — no changes allowed
-  }
+  useEffect(() => {
+    const saved = loadProviderConfig();
+    if (saved?.apiKey) {
+      setConfig(saved);
+    }
+    setHydrated(true);
+  }, []);
 
-  return { config, updateConfig };
+  const updateConfig = useCallback((next: ProviderConfig) => {
+    setConfig(next);
+    if (next.persistKey && next.apiKey) {
+      saveProviderConfig(next);
+    }
+  }, []);
+
+  const isConfigured = hydrated && Boolean(config.apiKey);
+
+  return { config, updateConfig, isConfigured, hydrated };
 }

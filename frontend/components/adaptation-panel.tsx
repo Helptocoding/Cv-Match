@@ -1,12 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import clsx from "clsx";
+import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { Card } from "@/components/ui/card";
 import type { AdaptedCV } from "@/types/scoring";
+import { matchBullets, wordDiff } from "@/lib/diff-cv";
+import type { DiffToken } from "@/lib/diff-cv";
+import { formatAdaptationWarnings } from "@/lib/ui-warnings";
 
 
-type View = "after" | "before" | "edit";
+type View = "changes" | "edit";
 
 type Props = {
   adapted?: AdaptedCV;
@@ -14,14 +17,13 @@ type Props = {
 };
 
 const TAB_LABELS: { id: View; label: string }[] = [
-  { id: "after",  label: "Después" },
-  { id: "before", label: "Antes"   },
-  { id: "edit",   label: "Editar"  },
+  { id: "changes", label: "Cambios" },
+  { id: "edit",    label: "Editar"  },
 ];
 
 
 export function AdaptationPanel({ adapted, onAdaptedChange }: Props) {
-  const [view, setView] = useState<View>("after");
+  const [view, setView] = useState<View>("changes");
   const [editSummary, setEditSummary] = useState("");
   const [editBullets, setEditBullets] = useState<string[]>([]);
 
@@ -45,18 +47,23 @@ export function AdaptationPanel({ adapted, onAdaptedChange }: Props) {
 
   function saveEdit() {
     if (!adapted || !onAdaptedChange) return;
+    const nextBullets = adapted.adapted_experience.map((_, i) => (
+      (editBullets[i] || "")
+        .split("\n")
+        .map(b => b.replace(/^[•\-*]\s*/, "").trim())
+        .filter(Boolean)
+    ));
+
     onAdaptedChange({
       ...adapted,
       adapted_summary: editSummary.trim(),
       adapted_experience: adapted.adapted_experience.map((exp, i) => ({
         ...exp,
-        rewritten_bullets: (editBullets[i] || "")
-          .split("\n")
-          .map(b => b.replace(/^[•\-*]\s*/, "").trim())
-          .filter(Boolean),
+        rewritten_bullets: nextBullets[i],
+        bullet_was_rewritten: nextBullets[i].map(() => true),
       })),
     });
-    setView("after");
+    setView("changes");
   }
 
   return (
@@ -67,31 +74,19 @@ export function AdaptationPanel({ adapted, onAdaptedChange }: Props) {
           <h2 className="text-xl font-semibold tracking-tight text-ink">Borrador adaptado</h2>
         </div>
         {adapted && (
-          <div className="flex gap-1 rounded-full bg-black/[0.04] p-0.5">
-            {TAB_LABELS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => handleTabChange(id)}
-                className={clsx(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-all duration-150",
-                  view === id
-                    ? "bg-white text-ink shadow-sm"
-                    : "text-black/50 hover:text-black/75"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <AnimatedTabs
+            tabs={TAB_LABELS}
+            activeTab={view}
+            onChange={(id) => handleTabChange(id as "changes" | "edit")}
+          />
         )}
       </div>
 
       {!adapted ? (
-        <p className="text-sm text-black/55">Adaptá el CV para ver el antes y después, comparar con la vacante y editar el resultado manualmente.</p>
-      ) : view === "before" ? (
-        <BeforeView adapted={adapted} sourceExpMap={sourceExpMap} />
-      ) : view === "edit" ? (
+        <p className="text-sm text-black/55">Adaptá el CV para ver los cambios y editar el resultado manualmente.</p>
+      ) : view === "changes" ? (
+        <ChangesView adapted={adapted} sourceExpMap={sourceExpMap} />
+      ) : (
         <EditView
           adapted={adapted}
           editSummary={editSummary}
@@ -99,158 +94,127 @@ export function AdaptationPanel({ adapted, onAdaptedChange }: Props) {
           onSummaryChange={setEditSummary}
           onBulletsChange={(i, val) => setEditBullets(prev => { const next = [...prev]; next[i] = val; return next; })}
           onSave={saveEdit}
-          onCancel={() => setView("after")}
+          onCancel={() => setView("changes")}
         />
-      ) : (
-        <AfterView adapted={adapted} />
       )}
     </Card>
   );
 }
 
 
-function BeforeView({ adapted, sourceExpMap }: {
+function DiffSpans({ tokens }: { tokens: DiffToken[] }) {
+  return (
+    <>
+      {tokens.map((t, i) => {
+        if (t.added) {
+          return <span key={i} className="bg-green-200/70 rounded px-0.5">{t.value}</span>;
+        }
+        if (t.removed) {
+          return <span key={i} className="bg-red-200/70 rounded px-0.5 line-through">{t.value}</span>;
+        }
+        return <span key={i}>{t.value}</span>;
+      })}
+    </>
+  );
+}
+
+function RewriteBadge({ wasRewritten }: { wasRewritten: boolean }) {
+  if (wasRewritten) return null;
+  return (
+    <span className="shrink-0 rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-black/35">
+      sin cambios
+    </span>
+  );
+}
+
+function hasVisibleDiffChange(tokens: DiffToken[]): boolean {
+  return tokens.some((token) => token.added || token.removed);
+}
+
+
+function ChangesView({ adapted, sourceExpMap }: {
   adapted: AdaptedCV;
   sourceExpMap: Record<string, { bullets: string[]; title?: string; company?: string }>;
 }) {
-  const originalSummary = adapted.source_cv?.summary;
+  const originalSummary = adapted.source_cv?.summary || "";
+  const panelWarnings = formatAdaptationWarnings(adapted.meta.warnings || []);
+
   return (
     <div className="space-y-3 animate-fade-in">
-      <div className="rounded-2xl bg-canvas px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">Resumen original</p>
-        <p className="mt-2 text-sm leading-6 text-black/65">
-          {originalSummary || <span className="italic text-black/35">Sin resumen en el CV original.</span>}
+      {panelWarnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-800/80">Revision sugerida</p>
+          <div className="mt-2 space-y-1.5">
+            {panelWarnings.map((warning) => (
+              <p key={warning} className="text-xs leading-5 text-amber-900/80">{warning}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-2xl bg-canvas px-4 py-3 transition-all duration-200 hover:bg-black/[0.03]">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">Resumen</p>
+        <p className="mt-2 text-sm leading-6 text-black/70">
+          {originalSummary || adapted.adapted_summary ? (
+            <DiffSpans tokens={wordDiff(originalSummary, adapted.adapted_summary)} />
+          ) : (
+            <span className="italic text-black/35">Sin resumen.</span>
+          )}
         </p>
       </div>
 
       {adapted.adapted_experience.map((item, index) => {
         const key = `${item.company.trim().toLowerCase()}||${item.title.trim().toLowerCase()}`;
         const src = sourceExpMap[key];
+        const originalBullets = src?.bullets || [];
+        const matches = matchBullets(originalBullets, item.rewritten_bullets);
+
         return (
           <div
             key={`${item.company}-${item.title}`}
-            className="rounded-2xl border border-black/8 px-4 py-3 animate-slide-up"
-            style={{ animationDelay: `${index * 55}ms` }}
+            className="rounded-2xl border border-black/8 px-4 py-3 animate-stagger-in transition-all duration-200 hover:border-black/[0.15] hover:shadow-sm"
+            style={{ animationDelay: `${index * 60}ms` }}
           >
             <h3 className="text-sm font-semibold text-ink">{item.title || "Rol"}</h3>
             <p className="text-xs text-black/45">{item.company}</p>
-            {src?.bullets && src.bullets.length > 0 ? (
-              <ul className="mt-2 space-y-1">
-                {src.bullets.map((bullet, bi) => (
-                  <li key={bi} className="flex gap-2 text-sm text-black/60">
-                    <span className="mt-0.5 shrink-0 text-black/25">•</span>
-                    <span>{bullet}</span>
-                  </li>
-                ))}
+              {matches.length > 0 ? (
+              <ul className="mt-2 space-y-1.5">
+                {matches.map((m, mi) => {
+                  if (m.kind === "paired") {
+                    const tokens = wordDiff(m.pair.original, m.pair.adapted);
+                    const wasRewritten = hasVisibleDiffChange(tokens);
+                    return (
+                      <li key={mi} className="flex gap-2 text-sm text-black/70 animate-stagger-in" style={{ animationDelay: `${mi * 30}ms`, animationDuration: "0.3s" }}>
+                        <span className="mt-0.5 shrink-0 text-black/25">•</span>
+                        <span className="min-w-0 flex-1 break-words leading-6">
+                          <DiffSpans tokens={tokens} />
+                        </span>
+                        <RewriteBadge wasRewritten={wasRewritten} />
+                      </li>
+                    );
+                  }
+                  if (m.kind === "new") {
+                    return (
+                      <li key={mi} className="flex gap-2 text-sm animate-stagger-in" style={{ animationDelay: `${mi * 30}ms`, animationDuration: "0.3s" }}>
+                        <span className="mt-0.5 shrink-0 text-green-600">•</span>
+                        <span className="min-w-0 flex-1 break-words rounded bg-green-200/70 px-0.5 leading-6">{m.adapted}</span>
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={mi} className="flex gap-2 text-sm animate-stagger-in" style={{ animationDelay: `${mi * 30}ms`, animationDuration: "0.3s" }}>
+                      <span className="mt-0.5 shrink-0 text-red-400">•</span>
+                      <span className="min-w-0 flex-1 break-words rounded bg-red-200/70 px-0.5 leading-6 line-through text-black/50">{m.original}</span>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
-              <p className="mt-2 text-xs italic text-black/35">Sin bullets en el CV original para esta entrada.</p>
+              <p className="mt-2 text-xs italic text-black/35">Sin cambios en esta entrada.</p>
             )}
           </div>
         );
       })}
-    </div>
-  );
-}
-
-
-function AfterView({ adapted }: { adapted: AdaptedCV }) {
-  return (
-    <div className="space-y-3 animate-fade-in">
-      <div className="rounded-2xl bg-canvas px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">Resumen adaptado</p>
-        <p className="mt-2 text-sm leading-6 text-black/70">{adapted.adapted_summary || "Sin resumen generado."}</p>
-      </div>
-
-      {adapted.added_keywords.length > 0 && (
-        <div className="rounded-2xl bg-canvas px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">Palabras clave integradas</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {adapted.added_keywords.map((kw) => (
-              <span key={kw} className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
-                {kw}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {adapted.latent_skills.length > 0 && (
-        <div className="rounded-2xl border border-blue-200/60 bg-blue-50/50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700/70">Habilidades inferidas del CV</p>
-          <p className="mt-1 text-xs text-blue-600/60">Detectadas en tu experiencia pero no listadas. Considerá agregarlas.</p>
-          <ul className="mt-2 space-y-1.5">
-            {adapted.latent_skills.map((ls) => (
-              <li key={ls.skill} className="text-sm">
-                <span className="font-medium text-blue-800">{ls.skill}</span>
-                {ls.evidence && <span className="ml-2 text-xs text-blue-600/70">— &quot;{ls.evidence}&quot;</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {adapted.missing_skills.length > 0 && (
-        <div className="rounded-2xl border border-red-200/60 bg-red-50/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-700/70">Habilidades requeridas no encontradas</p>
-          <p className="mt-1 text-xs text-red-600/60">La vacante las exige y no hay evidencia en el CV. No se pueden inventar.</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {adapted.missing_skills.map((skill) => (
-              <span key={skill} className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-2xl bg-canvas px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/40">Modo de generación</p>
-        <p className="mt-1.5 text-sm text-black/60">
-          {adapted.meta.strategy === "llm"
-            ? `IA vía ${adapted.meta.provider || "proveedor"} ${adapted.meta.model || ""}`.trim()
-            : "Extracción determinística (sin IA)"}
-        </p>
-      </div>
-
-      {adapted.adapted_experience.map((item, index) => (
-        <div
-          key={`${item.company}-${item.title}`}
-          className="rounded-2xl border border-black/8 px-4 py-3 animate-slide-up"
-          style={{ animationDelay: `${index * 55}ms` }}
-        >
-          <h3 className="text-sm font-semibold text-ink">{item.title || "Rol"}</h3>
-          <p className="text-xs text-black/45">{item.company}</p>
-          {item.keywords_emphasized.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {item.keywords_emphasized.map((kw) => (
-                <span key={kw} className="rounded-full bg-accent/8 px-2 py-0.5 text-[11px] font-medium text-accent/80">
-                  {kw}
-                </span>
-              ))}
-            </div>
-          )}
-          <ul className="mt-2 space-y-1.5">
-            {item.rewritten_bullets.map((bullet, bi) => (
-              <li key={bi} className="flex gap-2 text-sm text-black/70">
-                <span className="mt-0.5 shrink-0 text-black/25">•</span>
-                <span>{bullet}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-
-      {adapted.warnings.length > 0 && (
-        <div className="rounded-2xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {adapted.warnings.map((w, i) => (
-            <p key={i} className="flex gap-2">
-              <span>⚠</span>
-              <span>{w}</span>
-            </p>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

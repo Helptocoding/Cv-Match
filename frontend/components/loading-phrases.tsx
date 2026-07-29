@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ThinkingOrb } from "thinking-orbs";
 
 const PHRASES = [
   "Analizando tus habilidades técnicas…",
@@ -76,11 +77,22 @@ export function LoadingPhrases({ label }: Props) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24">
-      <div className="spinner" />
-      <p className="text-sm font-semibold text-black/50">{label}</p>
-      <p key={idx} className="animate-fade-in max-w-xs text-center text-sm text-black/35">
-        {PHRASES[idx]}
-      </p>
+      <div className="animate-pulse-subtle">
+        <ThinkingOrb state="working" size={64} />
+      </div>
+      <p className="text-sm font-semibold text-black/50 animate-fade-in-up" key={label} style={{ animationDuration: "0.4s" }}>{label}</p>
+      <div className="relative h-5 overflow-hidden">
+        <p
+          key={idx}
+          className="animate-slide-up max-w-xs text-center text-sm text-black/35"
+        >
+          {PHRASES[idx]}
+        </p>
+      </div>
+      {/* Subtle progress bar */}
+      <div className="mt-2 h-0.5 w-32 overflow-hidden rounded-full bg-black/[0.06]">
+        <div className="h-full w-full animate-shimmer rounded-full bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+      </div>
     </div>
   );
 }
