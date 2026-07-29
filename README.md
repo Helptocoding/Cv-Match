@@ -85,3 +85,5 @@ The Harvard export path renders an HTML/CSS template to PDF with `xhtml2pdf`, an
 ## Contributing
 
 See `CONTRIBUTING.md`.
+
+by: felipddiazz
