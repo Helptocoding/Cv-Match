@@ -1,34 +1,34 @@
 # CV Matcher
 
-CV Matcher is an open source BYOK web app that compares a CV against a job description, explains the match score, suggests a tailored version of the CV, and exports a polished result.
+CV Matcher es una aplicación web de código abierto (BYOK) que compara un CV con una descripción de puesto, explica la puntuación de coincidencia, sugiere una versión adaptada del CV y exporta un resultado pulido.
 
-## What is included
+## Qué incluye
 
 - `frontend/`: Next.js 14 App Router, TypeScript, Tailwind CSS
-- `backend/`: FastAPI service with parsing, scoring, adaptation, and export endpoints
-- `docker-compose.yml`: one-command local startup
-- no database by default; state stays in the browser
+- `backend/`: servicio FastAPI con endpoints para parseo, puntuación, adaptación y exportación
+- `docker-compose.yml`: arranque local con un solo comando
+- sin base de datos por defecto; el estado se mantiene en el navegador
 
-## Privacy model
+## Modelo de privacidad
 
-- users provide their own provider API key in the browser
-- keys are sent to the backend only through headers
-- the backend does not persist or log API keys
-- local browser storage can persist the key, or users can clear it between sessions
-- application tracking is also local to the browser; it never stores provider API keys or uploads data to the server
+- el usuario proporciona su propia clave API del proveedor en el navegador
+- las claves se envían al backend solo mediante cabeceras
+- el backend no persiste ni registra las claves API
+- el almacenamiento local del navegador puede guardar la clave, o el usuario puede borrarla entre sesiones
+- el seguimiento de aplicaciones también es local en el navegador; nunca almacena claves de proveedor ni sube datos al servidor
 
-## MVP flow
+## Flujo MVP
 
-1. Upload CV as PDF/DOCX or paste plain text
-2. Paste a job description
-3. Choose provider, model, and API key
-4. Parse both documents into structured JSON
-5. Calculate weighted match scores by category
-6. Generate an adapted CV draft without inventing experience
-7. Export a Harvard-style PDF
-8. Review an actionable ATS checklist and save each application locally with status, notes, and a next action
+1. Subir CV como PDF/DOCX o pegar texto plano
+2. Pegar la descripción del puesto
+3. Seleccionar proveedor, modelo y clave API
+4. Parsear ambos documentos a JSON estructurado
+5. Calcular puntuaciones de coincidencia ponderadas por categoría
+6. Generar un borrador adaptado del CV sin inventar experiencias
+7. Exportar un PDF con formato Harvard
+8. Revisar una checklist ATS accionable y guardar cada candidatura localmente con estado, notas y siguiente acción
 
-## Local development
+## Desarrollo local
 
 ### Backend
 
@@ -54,7 +54,7 @@ npm run dev
 docker compose up --build
 ```
 
-Frontend runs on `http://localhost:3000` and backend docs on `http://localhost:8000/docs`.
+El frontend se sirve en `http://localhost:3000` y la documentación del backend en `http://localhost:8000/docs`.
 
 ## Tests
 
@@ -63,7 +63,7 @@ cd backend
 pytest
 ```
 
-## Frontend build
+## Build del frontend
 
 ```bash
 cd frontend
@@ -71,21 +71,21 @@ npm ci
 npm run build
 ```
 
-## LLM providers
+## Proveedores LLM
 
-The backend uses LiteLLM as a unified provider abstraction. If a provider call fails, returns invalid JSON, or no key is supplied, the current MVP falls back to deterministic heuristics and returns processing warnings in the API response metadata.
+El backend utiliza LiteLLM como abstracción unificada para proveedores. Si una llamada al proveedor falla, devuelve JSON inválido o no se proporciona clave, el MVP actual recurre a heurísticos deterministas y devuelve advertencias de procesamiento en la metadata de la respuesta API.
 
-## PDF export
+## Exportación a PDF
 
-The Harvard export path renders an HTML/CSS template to PDF with `xhtml2pdf`, and falls back to a simpler reportlab renderer if HTML rendering fails.
+La ruta de exportación Harvard renderiza una plantilla HTML/CSS a PDF con `xhtml2pdf`, y en caso de fallo usa un renderizador más simple con `reportlab`.
 
-## Additional exports
+## Exportaciones adicionales
 
-- DOCX export is generated with `python-docx`
-- Markdown export is generated directly from the adapted CV structure
+- La exportación DOCX se genera con `python-docx`
+- La exportación Markdown se genera directamente desde la estructura del CV adaptado
 
-## Contributing
+## Contribuciones
 
-See `CONTRIBUTING.md`.
+Ver `CONTRIBUTING.md`.
 
 by: felipddiazz
