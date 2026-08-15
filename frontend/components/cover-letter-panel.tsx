@@ -4,6 +4,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { X } from "lucide-react";
 import type { CoverLetterResult } from "@/types/cover-letter";
+import { ExportNameModal } from "@/components/export-name-modal";
 
 
 type Props = {
@@ -16,6 +17,7 @@ export function CoverLetterPanel({ result, onClose }: Props) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(result.cover_letter);
   const [copied, setCopied] = useState(false);
+  const [showNameModal, setShowNameModal] = useState(false);
 
   function handleCopy() {
     navigator.clipboard.writeText(text).then(() => {
@@ -24,12 +26,12 @@ export function CoverLetterPanel({ result, onClose }: Props) {
     });
   }
 
-  function handleDownload() {
+  function handleDownloadConfirmed(fileName: string) {
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "carta-de-presentacion.txt";
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -114,7 +116,7 @@ export function CoverLetterPanel({ result, onClose }: Props) {
             </button>
             <button
               type="button"
-              onClick={handleDownload}
+              onClick={() => setShowNameModal(true)}
               className="rounded-full bg-[#1d1d1f] px-4 py-1.5 text-[13px] font-medium text-white transition-all duration-150 hover:bg-[#1d1d1f]/90 active:scale-[0.97]"
             >
               Descargar TXT
@@ -123,6 +125,20 @@ export function CoverLetterPanel({ result, onClose }: Props) {
         </div>
 
       </div>
+
+      {showNameModal && (
+        <ExportNameModal
+          title="Carta de presentación"
+          ext="txt"
+          defaultValue="carta-de-presentacion"
+          busy={false}
+          onConfirm={(name) => {
+            handleDownloadConfirmed(name);
+            setShowNameModal(false);
+          }}
+          onCancel={() => setShowNameModal(false)}
+        />
+      )}
     </div>
   );
 }
