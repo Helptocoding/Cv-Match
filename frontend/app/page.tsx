@@ -7,22 +7,27 @@ import { Upload, FileText, Trash2, Github } from "lucide-react";
 import { AdaptationPanel } from "@/components/adaptation-panel";
 import { AdaptationWizard } from "@/components/adaptation-wizard";
 import { CoverLetterPanel } from "@/components/cover-letter-panel";
+import { ExportNameModal } from "@/components/export-name-modal";
 import { CvPreviewPanel } from "@/components/cv-preview-panel";
 import { FallbackBanner } from "@/components/fallback-banner";
 import { ThinkingOrb } from "thinking-orbs";
 import { LoadingPhrases }   from "@/components/loading-phrases";
 import { ScorePanel }       from "@/components/score-panel";
+import { AtsChecklist } from "@/components/ats-checklist";
+import { ApplicationTracker } from "@/components/application-tracker";
 import { Card }             from "@/components/ui/card";
 import { adaptCV, exportCV, generateCoverLetter, parseCV, parseJob, scoreAdapted, scoreMatch } from "@/lib/api";
 import { useApiKey } from "@/hooks/use-api-key";
 import { collectDegradations } from "@/lib/degradation";
 import { clearCvData, loadCvText, loadFileName, loadParsedCv, saveCvText, saveFileName, saveParsedCv } from "@/lib/storage";
+import { loadApplications, saveApplications } from "@/lib/application-storage";
 import { ProviderConfigPanel } from "@/components/provider-config";
 import type { ProviderConfig } from "@/types/api";
 import type { StructuredCV } from "@/types/cv";
 import type { StructuredJob } from "@/types/job";
 import type { AdaptedCV, MatchScoreResult } from "@/types/scoring";
 import type { CoverLetterResult } from "@/types/cover-letter";
+import type { ApplicationRecord, ApplicationStatus } from "@/types/application";
 
 
 const btnPrimary = [
@@ -72,11 +77,14 @@ export default function HomePage() {
   const [showPreview, setShowPreview] = useState(false);
   const [busy,       setBusy]       = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
+  const [exportTarget, setExportTarget] = useState<{ ext: "pdf" | "docx" | "md"; label: string } | null>(null);
   const [busyLabel,  setBusyLabel]  = useState("");
   const [message,    setMessage]    = useState("");
   const [adaptMode,  setAdaptMode]  = useState<"fast" | "deep">("fast");
   const [showWizard, setShowWizard] = useState(false);
   const [wizardData, setWizardData] = useState<{ adapted: AdaptedCV; cv: StructuredCV; job: StructuredJob } | null>(null);
+  const [applications, setApplications] = useState<ApplicationRecord[]>([]);
+  const [activeApplicationId, setActiveApplicationId] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const scrollToResults = () => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -105,8 +113,79 @@ export default function HomePage() {
     setFileName(loadFileName());
     setParsedCV(loadParsedCv());
     setSaved(!!(loadCvText() || loadParsedCv() || loadFileName()));
+    setApplications(loadApplications());
     setHydrated(true);
   }, []);
+
+  function persistApplications(next: ApplicationRecord[]) {
+    const ordered = [...next].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    if (!saveApplications(ordered)) {
+      setMessage("No se pudo guardar la postulación: el almacenamiento local no está disponible o está lleno.");
+      return false;
+    }
+    setApplications(ordered);
+    return true;
+  }
+
+  function handleSaveApplication() {
+    if (!parsedJob || (!score && !adapted)) {
+      setMessage("Primero analizá o adaptá la vacante antes de guardarla.");
+      return;
+    }
+    const current = applications.find((application) => application.id === activeApplicationId);
+    const now = new Date().toISOString();
+    const id = current?.id ?? globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const application: ApplicationRecord = {
+      id,
+      createdAt: current?.createdAt ?? now,
+      updatedAt: now,
+      status: current?.status ?? "guardada",
+      notes: current?.notes ?? "",
+      nextAction: current?.nextAction ?? "",
+      jobText,
+      job: parsedJob,
+      score,
+      adaptedScore,
+      adapted,
+      coverLetter: coverLetterResult ?? current?.coverLetter ?? null,
+    };
+    const next = current
+      ? applications.map((savedApplication) => savedApplication.id === id ? application : savedApplication)
+      : [application, ...applications];
+    if (persistApplications(next)) {
+      setActiveApplicationId(id);
+      setMessage(current ? "Postulación actualizada en este navegador." : "Postulación guardada en este navegador.");
+    }
+  }
+
+  function handleOpenApplication(application: ApplicationRecord) {
+    setJobText(application.jobText);
+    setParsedJob(application.job);
+    setScore(application.score);
+    setAdaptedScore(application.adaptedScore);
+    setAdapted(application.adapted);
+    setCoverLetterResult(application.coverLetter ?? null);
+    setActiveApplicationId(application.id);
+    setMessage("Postulación cargada. El CV original no se reemplazó.");
+    requestAnimationFrame(scrollToResults);
+  }
+
+  function handleApplicationStatusChange(id: string, status: ApplicationStatus) {
+    const now = new Date().toISOString();
+    persistApplications(applications.map((application) => application.id === id ? { ...application, status, updatedAt: now } : application));
+  }
+
+  function handleApplicationDetailsChange(id: string, details: Pick<ApplicationRecord, "notes" | "nextAction">) {
+    const now = new Date().toISOString();
+    persistApplications(applications.map((application) => application.id === id ? { ...application, ...details, updatedAt: now } : application));
+  }
+
+  function handleDeleteApplication(id: string) {
+    if (!window.confirm("¿Eliminar esta postulación guardada?")) return;
+    if (persistApplications(applications.filter((application) => application.id !== id)) && activeApplicationId === id) {
+      setActiveApplicationId(null);
+    }
+  }
 
   useEffect(() => {
     const anyModalOpen = showWizard || coverLetterResult !== null || showPreview;
@@ -246,14 +325,21 @@ export default function HomePage() {
       .finally(() => setAdaptedScoreLoading(false));
   }, [adapted, parsedJob, config]);
 
-  async function handleExport(ext: "pdf" | "docx" | "md") {
+  function defaultExportName(): string {
+    const fullName = parsedCV?.basics.full_name?.trim();
+    if (fullName) return fullName;
+    if (fileName) return fileName.replace(/\.(pdf|docx|doc|txt|md|rtf)$/i, "");
+    return "cv-matcher";
+  }
+
+  async function handleExport(ext: "pdf" | "docx" | "md", downloadName: string) {
     if (!adapted || exportBusy) return;
     setExportBusy(true);
     try {
       const blob = await exportCV(adapted, ext);
       const a = Object.assign(document.createElement("a"), {
         href: URL.createObjectURL(blob),
-        download: `cv-matcher.${ext}`,
+        download: downloadName,
       });
       a.click(); URL.revokeObjectURL(a.href);
       setMessage(`${ext.toUpperCase()} descargado.`);
@@ -433,7 +519,7 @@ export default function HomePage() {
             </div>
             <textarea
               value={jobText}
-              onChange={e => { setJobText(e.target.value); setParsedJob(null); invalidateDerivedScores(); }}
+              onChange={e => { setJobText(e.target.value); setParsedJob(null); setActiveApplicationId(null); invalidateDerivedScores(); }}
               placeholder="Pegá la descripción completa de la vacante acá…"
               rows={12}
               className={clsx(inputClass, "resize-none")}
@@ -486,6 +572,14 @@ export default function HomePage() {
             <FileText size={14} />
             Carta de presentación
           </button>
+          <button
+            type="button"
+            disabled={busy || (!score && !adapted)}
+            onClick={handleSaveApplication}
+            className="rounded-full border border-[#0071e3]/25 bg-[#0071e3]/[0.06] px-4 py-2 text-[13px] font-semibold text-[#0071e3] transition-all hover:bg-[#0071e3]/[0.12] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            {activeApplicationId ? "Actualizar postulación" : "Guardar postulación"}
+          </button>
 
           {busy && (
             <span className="flex items-center gap-2 text-[13px] text-black/45">
@@ -514,7 +608,7 @@ export default function HomePage() {
                   key={ext}
                   type="button"
                   disabled={exportBusy}
-                  onClick={() => handleExport(ext)}
+                  onClick={() => setExportTarget({ ext, label })}
                   className="rounded-full border border-black/[0.12] bg-white/70 px-4 py-1.5 text-[13px] font-medium text-black/55 backdrop-blur-sm transition-all duration-200 hover:border-black/[0.25] hover:bg-white hover:text-black/75 hover:shadow-sm active:scale-[0.97] disabled:opacity-40"
                 >
                   {label}
@@ -532,6 +626,7 @@ export default function HomePage() {
           ) : hasResults ? (
             <div className="space-y-4">
             <FallbackBanner steps={degradations} onOpenProviderConfig={() => setShowProviderConfig(true)} />
+            <AtsChecklist score={score} adaptedScore={adaptedScore} adapted={adapted} job={parsedJob} />
             <div className="grid gap-4 animate-fade-in-up lg:grid-cols-2" style={{ animationDuration: "0.5s" }}>
               {score || adaptedScore || adaptedScoreLoading || adapted?.impact
                 ? <ScorePanel score={score} adaptedScore={adaptedScore} adaptedScoreLoading={adaptedScoreLoading} impact={adapted?.impact} onRetryAdaptedScore={handleRetryAdaptedScore} />
@@ -549,6 +644,14 @@ export default function HomePage() {
             </div>
           ) : null}
         </div>
+
+        <ApplicationTracker
+          applications={applications}
+          onOpen={handleOpenApplication}
+          onStatusChange={handleApplicationStatusChange}
+          onDetailsChange={handleApplicationDetailsChange}
+          onDelete={handleDeleteApplication}
+        />
 
       </div>
 
@@ -594,6 +697,20 @@ export default function HomePage() {
           config={config}
           onSave={updateConfig}
           onClose={() => setShowProviderConfig(false)}
+        />
+      )}
+
+      {exportTarget && (
+        <ExportNameModal
+          title={exportTarget.label}
+          ext={exportTarget.ext}
+          defaultValue={defaultExportName()}
+          busy={exportBusy}
+          onConfirm={(name) => {
+            handleExport(exportTarget.ext, name);
+            setExportTarget(null);
+          }}
+          onCancel={() => setExportTarget(null)}
         />
       )}
 

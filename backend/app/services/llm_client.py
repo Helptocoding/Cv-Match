@@ -67,7 +67,7 @@ class LLMClient:
                 ],
                 response_format={"type": "json_object"},
                 temperature=0,
-                timeout=45,
+                timeout=120,
             )
         except (AuthenticationError, PermissionDeniedError) as exc:
             # Must not degrade to the heuristic fallback: a rejected key is a

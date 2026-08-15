@@ -15,6 +15,7 @@ CV Matcher is an open source BYOK web app that compares a CV against a job descr
 - keys are sent to the backend only through headers
 - the backend does not persist or log API keys
 - local browser storage can persist the key, or users can clear it between sessions
+- application tracking is also local to the browser; it never stores provider API keys or uploads data to the server
 
 ## MVP flow
 
@@ -25,6 +26,7 @@ CV Matcher is an open source BYOK web app that compares a CV against a job descr
 5. Calculate weighted match scores by category
 6. Generate an adapted CV draft without inventing experience
 7. Export a Harvard-style PDF
+8. Review an actionable ATS checklist and save each application locally with status, notes, and a next action
 
 ## Local development
 
