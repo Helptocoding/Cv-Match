@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: cv-matcher-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: BACKEND_CORS_ORIGINS
+        value: http://localhost:3000
+        sync: false
